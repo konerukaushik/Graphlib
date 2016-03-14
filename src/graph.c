@@ -91,8 +91,8 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
     }
 
     while(iterator < no_of_vertices + G->total_vertices) {
-      LOG_DEBUG("Memory Appending for Interface %d\n",iterator);
-      LOG_DEBUG("Total Interface %d, Requirment of interfaces %d",no_of_vertices, G->total_vertices);
+      LOG_DEBUG("Memory Appending for vertices %d\n",iterator);
+      LOG_DEBUG("Total required vertices %d, Present vertices %d",no_of_vertices, G->total_vertices);
 
       runner  = Graph_add_vertices_template();
       if (runner == NULL) {
@@ -103,7 +103,8 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
       runner->interface_number = iterator;
 
       if (V == NULL) {
-          V       = runner;
+          V                = runner;
+          G->vertices_list = V;
       } else {
           V->next = runner;
           V       = V->next;
@@ -114,7 +115,7 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
       iterator++;
     }
 
-    G->total_vertices + iterator;
+    G->total_vertices += iterator;
 
     return G->vertices_list;
 
@@ -184,12 +185,13 @@ Graph_init(int no_of_vertices, bool is_directed) {
         goto destroy;
     }
 
-    G->vertices_list = Graph_add_vertices(G, no_of_vertices);
-    G->is_directed = is_directed; 
+    Graph_add_vertices(G, no_of_vertices);
     if (G->vertices_list  == NULL) {
       LOG_ERR("Unable to create %d vertices",no_of_vertices);
       goto destroy;
     }
+
+    G->is_directed = is_directed; 
 
     return G;
 
@@ -220,11 +222,11 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
       return;
     }
 
-    printf("--------------------------\n");
-    printf("| Vertex ID : %4d    |\n",V->interface_number);
+    printf("-------------------------\n");
+    printf("| Vertex ID : %6d    |\n",V->interface_number);
     printf("| is_visited: %s     |\n",V->is_visited?"TRUE":"FALSE");
-    printf("| min_dis   : %4lu    |\n",(V->min_distance == NaN)?-1:V->min_distance);
-    printf("---------------------------\n");
+    printf("| min_dis   : %6lu    |\n",(V->min_distance == NaN)?0:V->min_distance);
+    printf("-------------------------\n");
 
     return;
 }
