@@ -223,9 +223,9 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
     }
 
     printf("-------------------------\n");
-    printf("| Vertex ID : %6d    |\n",V->interface_number);
+    printf("| Vertex ID : %4d      |\n",V->interface_number);
     printf("| is_visited: %s     |\n",V->is_visited?"TRUE":"FALSE");
-    printf("| min_dis   : %6lu    |\n",(V->min_distance == NaN)?0:V->min_distance);
+    printf("| min_dis   : %s       |\n",(V->min_distance == NaN)?"NaN":(char *)V->min_distance);
     printf("-------------------------\n");
 
     return;
