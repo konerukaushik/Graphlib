@@ -16,5 +16,6 @@ int main() {
   G = Graph_init(10, FALSE);
 
   Graph_display_graph(G);
+
   return 0;
 }

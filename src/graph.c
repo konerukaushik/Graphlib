@@ -6,7 +6,93 @@
  * Email: konerukaushik@gmail.com
  */
 
+/*
+ *
+ * ToDo:
+ *  -> Need to replace Shallow Copying with Depth Copying
+ */
+
 #include "graph.h"
+
+/*
+ * Function:
+ * Graph_add_edge_to_vertex
+ *
+ * In this function we append new_edge to
+ * the adjacency list of vertices list
+ *
+ * Input: Graph_vertices_t vertices_list 
+ *        Graph_edge_t     new_edge
+ * output:
+ *        Graph_edge_t* (Graph Vertex adjacencyList)
+ */
+Graph_edge_t *
+Graph_add_edge_to_vertex(Graph_vertices_t *vertices_list,
+                         Graph_edge_t  *new_edge) {
+
+  Graph_vertices_t      *runner; /* To Parse through to vertices_list */
+  
+  /* We Precheck Vertices_list not to be NULL
+   * If it is NULL here, then there is 
+   * memory corruption
+   */
+  assert(vertices_list);
+
+  if (vertices_list->adjacency_list == NULL) {
+    free(runner);
+    return new_edge;
+  }
+
+  runner = vertices_list->adjacency_list;
+
+  /* Parse till we reach end of Adjacency List */
+  while(runner->next != NULL) {
+    runner = runner->next;
+  }
+
+  /* Append the New edge to List */
+  runner->next = new_edge;
+
+  return vertices_list->adjacency_list;
+}
+
+/* 
+ * Function:
+ * Graph_add_edge_template
+ *
+ * In this function we create new Edge Object
+ * to append into the vertices Adjacency List
+ * So, We consider destination and weight only
+ *
+ * Input:
+ *      vertex_number_t destination (Destination Vertex)
+ *      edge_weight_t   weight  (Weight of edge)
+ * Output:
+ *      Graph_edge_t  (new edge Object)
+ */
+Graph_edge_t *
+Graph_add_edge_template(vertex_number_t Destination,
+                        edge_weight_t   weight) {
+
+    Graph_edge_t      *temp;
+
+    temp = (Graph_edge_t *) malloc(sizeof(Graph_edge_t));
+
+    if (temp == NULL) {
+      LOG_ERR("Unable to allocate memory for Edge with Dest:%d",Destination);
+      goto destroy;
+    }
+
+    temp->target = Destination;
+    temp->weight = weight;
+    temp->next   = NULL;
+
+    return temp;
+    
+destroy:
+    destroy(temp);
+    return NULL;
+}
 
 /*
  * Function: Graph_add_edge
@@ -26,9 +112,49 @@ Graph_t *
 Graph_add_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,  
                 edge_weight_t weight, bool is_directed) {
 
-  
 
-  
+  Graph_edge_t        *new_edge;
+  Graph_vertices_t    *vertices_list = G->vertices_list;
+  int                  found = 0;
+
+  if (vertices_list == NULL) {
+    LOG_ERR("No Existing Vertices Present in Graph");
+    goto destroy;
+  }
+
+  new_edge   =  Graph_add_edge_template(D, weight);
+  if (new_edge == NULL) {
+    LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",S,D);
+    goto destroy;
+  }
+
+  while(vertices_list != NULL && vertices_list->interface_number == S) {
+      vertices_list = vertices_list->next;
+  }
+
+  if (vertices_list == NULL || vertices_list->interface_number != S) {
+    LOG_ERR("Unable to find vertex: %s",S);
+    goto destroy;
+  }
+
+  /* If we are unable to add certain edge, Notify User
+   * and Proceed to execute further
+   */
+  verties_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list, new_edge);
+
+  if (!is_directed) {
+      new_edge = NULL;
+      new_edge = Graph_add_edge_template(S, weight);
+      if (new_edge == NULL) {
+        LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",D,S);
+        goto destroy;
+      }
+  }
+
+destroy:
+  free(new_edge);
+  free(vertices_list);
+  return NULL;
 }
   
 
@@ -225,7 +351,7 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
     printf("-------------------------\n");
     printf("| Vertex ID : %4d      |\n",V->interface_number);
     printf("| is_visited: %s     |\n",V->is_visited?"TRUE":"FALSE");
-    printf("| min_dis   : %s       |\n",(V->min_distance == NaN)?"NaN":(char *)V->min_distance);
+    printf("| min_dis   : %s       |\n",(V->min_distance == NaN)?"NaN":(char *)(V->min_distance));
     printf("-------------------------\n");
 
     return;
