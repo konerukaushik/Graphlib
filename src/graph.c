@@ -10,6 +10,7 @@
  *
  * ToDo:
  *  -> Need to replace Shallow Copying with Depth Copying
+ *  -> Need to Modularize the Graph_add_edge directed version
  */
 
 #include "graph.h"
@@ -21,29 +22,23 @@
  * In this function we append new_edge to
  * the adjacency list of vertices list
  *
- * Input: Graph_vertices_t vertices_list 
- *        Graph_edge_t     new_edge
+ * Input: Graph_edges_t     adjacency_list
+ *        Graph_edges_t     new_edge
  * output:
- *        Graph_edge_t* (Graph Vertex adjacencyList)
+ *        Graph_edges_t* (Graph Vertex adjacencyList)
  */
-Graph_edge_t *
-Graph_add_edge_to_vertex(Graph_vertices_t *vertices_list,
-                         Graph_edge_t  *new_edge) {
+Graph_edges_t *
+Graph_add_edge_to_vertex(Graph_edges_t  *adjacency_list,
+                         Graph_edges_t  *new_edge) {
 
-  Graph_vertices_t      *runner; /* To Parse through to vertices_list */
+  Graph_edges_t      *runner; /* To Parse through to vertices_list */
   
-  /* We Precheck Vertices_list not to be NULL
-   * If it is NULL here, then there is 
-   * memory corruption
-   */
-  assert(vertices_list);
-
-  if (vertices_list->adjacency_list == NULL) {
+  if (adjacency_list == NULL) {
     free(runner);
     return new_edge;
   }
 
-  runner = vertices_list->adjacency_list;
+  runner = adjacency_list;
 
   /* Parse till we reach end of Adjacency List */
   while(runner->next != NULL) {
@@ -53,7 +48,7 @@ Graph_add_edge_to_vertex(Graph_vertices_t *vertices_list,
   /* Append the New edge to List */
   runner->next = new_edge;
 
-  return vertices_list->adjacency_list;
+  return adjacency_list;
 }
 
 /* 
@@ -68,15 +63,15 @@ Graph_add_edge_to_vertex(Graph_vertices_t *vertices_list,
  *      vertex_number_t destination (Destination Vertex)
  *      edge_weight_t   weight  (Weight of edge)
  * Output:
- *      Graph_edge_t  (new edge Object)
+ *      Graph_edges_t  (new edge Object)
  */
-Graph_edge_t *
+Graph_edges_t *
 Graph_add_edge_template(vertex_number_t Destination,
                         edge_weight_t   weight) {
 
-    Graph_edge_t      *temp;
+    Graph_edges_t      *temp;
 
-    temp = (Graph_edge_t *) malloc(sizeof(Graph_edge_t));
+    temp = (Graph_edges_t *)malloc(sizeof(Graph_edges_t));
 
     if (temp == NULL) {
       LOG_ERR("Unable to allocate memory for Edge with Dest:%d",Destination);
@@ -90,7 +85,7 @@ Graph_add_edge_template(vertex_number_t Destination,
     return temp;
     
 destroy:
-    destroy(temp);
+    free(temp);
     return NULL;
 }
 
@@ -113,7 +108,7 @@ Graph_add_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,
                 edge_weight_t weight, bool is_directed) {
 
 
-  Graph_edge_t        *new_edge;
+  Graph_edges_t        *new_edge;
   Graph_vertices_t    *vertices_list = G->vertices_list;
   int                  found = 0;
 
@@ -128,19 +123,19 @@ Graph_add_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,
     goto destroy;
   }
 
-  while(vertices_list != NULL && vertices_list->interface_number == S) {
+  while(vertices_list != NULL && vertices_list->interface_number != S) {
       vertices_list = vertices_list->next;
   }
 
   if (vertices_list == NULL || vertices_list->interface_number != S) {
-    LOG_ERR("Unable to find vertex: %s",S);
+    LOG_ERR("Unable to find vertex: %d",S);
     goto destroy;
   }
 
   /* If we are unable to add certain edge, Notify User
    * and Proceed to execute further
    */
-  verties_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list, new_edge);
+  vertices_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list->adjacency_list, new_edge);
 
   if (!is_directed) {
       new_edge = NULL;
@@ -149,6 +144,26 @@ Graph_add_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,
         LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",D,S);
         goto destroy;
       }
+
+      new_edge   =  Graph_add_edge_template(D, weight);
+      if (new_edge == NULL) {
+        LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",D,S);
+        goto destroy;
+      }
+
+      while(vertices_list != NULL && vertices_list->interface_number != D) {
+        vertices_list = vertices_list->next;
+      }
+
+      if (vertices_list == NULL || vertices_list->interface_number != D) {
+        LOG_ERR("Unable to find vertex: %d",D);
+        goto destroy;
+      }
+
+      /* If we are unable to add certain edge, Notify User
+       * and Proceed to execute further
+       */
+      vertices_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list->adjacency_list, new_edge);
   }
 
 destroy:

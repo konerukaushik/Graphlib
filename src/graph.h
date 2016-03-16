@@ -19,7 +19,7 @@
  * Email : konerukaushik@gmail.com
  */
 
-#ifndef  __GRAPH_H__
+#ifndef __GRAPH_H__
 #define __GRAPH_H__
 
 /* 
@@ -28,13 +28,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 /*
  * List of typedef
  */
 typedef struct graph_ Graph_t;
 typedef struct graph_vertices_ Graph_vertices_t;
-typedef struct graph_edge_ Graph_edges_t;
+typedef struct graph_edges_ Graph_edges_t;
 typedef int vertex_number_t;
 typedef int edge_weight_t;
 typedef int bool;
@@ -121,6 +122,9 @@ Graph_add_vertices(Graph_t*, int);
 
 void      
 Graph_display_graph(Graph_t *);
+
+Graph_t *
+Graph_add_edge(Graph_t *, vertex_number_t, vertex_number_t, edge_weight_t , bool);
 
 
 #endif /* End of __GRAPH_H__ */

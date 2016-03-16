@@ -15,6 +15,8 @@ int main() {
 
   G = Graph_init(10, FALSE);
 
+  Graph_add_edge(G, 0, 1, 1, 0);
+
   Graph_display_graph(G);
 
   return 0;
