@@ -17,6 +17,74 @@
 
 /*
  * Function:
+ *  Graph_node_in_priority_list
+ *
+ *  In this function we verify
+ *  whether node is already present in 
+ *  priority_list before appending to
+ *  priority_list
+ *
+ * Input
+ *    Graph_priority_t
+ *    vertex_number_t
+ *
+ * output
+ *    True (If already present)
+ *    False (If not present)
+ */
+bool
+Graph_node_in_priority_list(Graph_priority_t *prio,
+                              vertex_number_t node) {
+    Graph_priority_t    *S;
+
+    S = prio;
+
+    while(S != NULL) {
+      if (S->vertex == node) {
+        return TRUE;
+      }
+      S = S->next;
+    }
+
+    return FALSE;
+}
+
+/* Function:
+ * Graph_dump_prio_list
+ *
+ * In this function we dump complete Priority 
+ * List
+ *
+ * Input:
+ *    Graph_priority_t *S
+ *
+ * Output:
+ *    none
+ */
+void
+Graph_dump_prio_list(Graph_priority_t *S) {
+
+  Graph_priority_t      *runner = S;
+
+
+  if (S == NULL) {
+    LOG_DEBUG("Priority List is NULL");
+    return;
+  }
+
+  printf("<-----Prio List ----->\n");
+  while(S != NULL) {
+    printf(" Node -> %d\n",S->vertex);
+    S = S->next;
+  }
+  printf("<-------------------->\n");
+
+
+  return;
+}
+
+/*
+ * Function:
  * Graph_get_vertex
  *
  * In this function we vertex pointer
@@ -164,8 +232,8 @@ destroy:
 /*
  * Function: Graph_add_edge
  *
- * In this function we add edges 
- * To a Specific Graph
+ * This function is the API for 
+ * adding Edge
  *
  * Input:
  *      G <-- Graph In which we Need to Append the Edge
@@ -389,7 +457,7 @@ Graph_dump_vertices(const Graph_vertices_t *V, bool print_adjacency) {
     if (V->min_distance == NaN) {
       printf("| min_dis   : NaN       |\n");
     } else {
-      printf("| min_dis   : %lu       |\n",(V->min_distance));
+      printf("| min_dis   : %3lu       |\n",(V->min_distance));
     }
     printf("-------------------------\n");
 
@@ -587,20 +655,23 @@ Graph_get_priority_list(Graph_t *G,
     if (Graph_Dj_set_min_distance(G, 
                         (vertex->min_distance+adjacency_list->weight),
                           adjacency_list->target)) {
-      temp  =  Graph_get_priority_list_template(); 
-      temp->vertex = adjacency_list->target;
-      if (priority_list == NULL || prio_runner == NULL) {
-        priority_list = temp;
-        prio_runner   = temp;
-      } else {
-        prio_runner->next = temp;
-        prio_runner   = prio_runner->next;
-      }
-      temp = temp->next;
-    } 
+      if (!Graph_node_in_priority_list(priority_list, adjacency_list->target)) { 
+        temp  =  Graph_get_priority_list_template(); 
+        temp->vertex = adjacency_list->target;
+        if (priority_list == NULL || prio_runner == NULL) {
+          priority_list = temp;
+          prio_runner   = temp;
+        } else {
+          prio_runner->next = temp;
+          prio_runner   = prio_runner->next;
+        }
+        temp = temp->next;
+      } 
+    }
     adjacency_list = adjacency_list->next;
   }
 
+  return priority_list;
 }
 
 Graph_priority_t *
@@ -649,6 +720,10 @@ Graph_get_dijsktra(Graph_t  *G, vertex_number_t S) {
   adjacency_list = vertex->adjacency_list;
   priority_list = Graph_get_priority_list(G, priority_list, vertex);
 
+#ifdef DEBUG
+  Graph_dump_prio_list(priority_list);
+#endif
+
   while(priority_list != NULL) {
     /* Return Last vertex from Priority List */
     vertex = Graph_Dj_get_next_vertex(G, priority_list);
@@ -656,6 +731,9 @@ Graph_get_dijsktra(Graph_t  *G, vertex_number_t S) {
     priority_list = Graph_Dj_pop_priority_list(priority_list);
     /* Populate min distance for new vertices */
     priority_list = Graph_get_priority_list(G, priority_list,vertex); 
+#ifdef DEBUG
+    Graph_dump_prio_list(priority_list);
+#endif
   }
 
   Graph_display_graph(G);

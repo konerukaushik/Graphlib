@@ -44,7 +44,6 @@ int main() {
   destination = 3;
   weight = 7;
   Graph_add_edge(G, source, destination, weight, is_directed);
-//  Graph_display_graph(G);
 
   printf("----- Dijkstra ----\n");
 
