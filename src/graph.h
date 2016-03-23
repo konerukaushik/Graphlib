@@ -36,6 +36,7 @@
 typedef struct graph_ Graph_t;
 typedef struct graph_vertices_ Graph_vertices_t;
 typedef struct graph_edges_ Graph_edges_t;
+typedef struct graph_priority_ Graph_priority_t;
 typedef int vertex_number_t;
 typedef int edge_weight_t;
 typedef int bool;
@@ -91,6 +92,15 @@ struct graph_edges_ {
     Graph_edges_t         *next;   /* Pointer to next edge */
 };
 
+/* 
+ * Graph_priority Structure
+ * to maintain Priority List
+ */
+struct graph_priority_{
+  vertex_number_t      vertex; /* To store vertex information */
+  Graph_priority_t     *next;
+};
+
 /*
  * Following Defines are to Make life easy
  */
@@ -121,10 +131,12 @@ Graph_vertices_t*
 Graph_add_vertices(Graph_t*, int);
 
 void      
-Graph_display_graph(Graph_t *);
+Graph_display_graph(const Graph_t *);
 
 Graph_t *
 Graph_add_edge(Graph_t *, vertex_number_t, vertex_number_t, edge_weight_t , bool);
 
+void
+Graph_get_dijsktra(Graph_t *, vertex_number_t );
 
 #endif /* End of __GRAPH_H__ */

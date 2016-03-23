@@ -17,6 +17,34 @@
 
 /*
  * Function:
+ * Graph_get_vertex
+ *
+ * In this function we vertex pointer
+ * from graph
+ *
+ * Input:
+ *      Graph_t   
+ *      vertex_number_t
+ *
+ * Output:
+ *      Graph_vertices_t
+ */
+Graph_vertices_t *
+Graph_get_vertex(Graph_t *G, vertex_number_t node) {
+  
+    Graph_vertices_t    *runner;
+
+    runner  = G->vertices_list;
+
+    while(runner != NULL && runner->interface_number != node) {
+      runner = runner->next;
+    }
+
+    return runner;
+}
+
+/*
+ * Function:
  * Graph_add_edge_to_vertex
  *
  * In this function we append new_edge to
@@ -89,6 +117,50 @@ destroy:
     return NULL;
 }
 
+/* Function: Graph_append_edge
+ * In this function we add edges
+ * to a Specifc Graph
+ *
+ * Input:
+ *      G <-- Graph In which we Need to Append the Edge
+ *      Source <-- This will Source
+ *      weight <-- Edge Weight
+ *      Destination <-- This is Destination
+ * Output:
+ *      Modified G
+ */
+Graph_t *
+Graph_append_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,
+                  edge_weight_t weight) {
+
+  Graph_edges_t       *new_edge;
+  Graph_vertices_t    *vertex;
+  int                  found = 0;
+
+  new_edge   =  Graph_add_edge_template(D, weight);
+  if (new_edge == NULL) {
+    LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",S,D);
+    goto destroy;
+  }
+
+  vertex  = Graph_get_vertex(G, S);
+  if (vertex == NULL) {
+    LOG_ERR("Unable to find vertex: %d",S);
+    goto destroy;
+  }
+
+  /* If we are unable to add certain edge, Notify User
+   * and Proceed to execute further
+   */
+  vertex->adjacency_list = Graph_add_edge_to_vertex(vertex->adjacency_list, new_edge);
+
+  return G;
+
+destroy:
+  free(vertex);
+  free(new_edge);
+}
+      
 /*
  * Function: Graph_add_edge
  *
@@ -107,74 +179,19 @@ Graph_t *
 Graph_add_edge(Graph_t *G, vertex_number_t S, vertex_number_t D,  
                 edge_weight_t weight, bool is_directed) {
 
-
-  Graph_edges_t        *new_edge;
-  Graph_vertices_t    *vertices_list = G->vertices_list;
-  int                  found = 0;
-
-  if (vertices_list == NULL) {
-    LOG_ERR("No Existing Vertices Present in Graph");
-    goto destroy;
-  }
-
-  new_edge   =  Graph_add_edge_template(D, weight);
-  if (new_edge == NULL) {
-    LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",S,D);
-    goto destroy;
-  }
-
-  while(vertices_list != NULL && vertices_list->interface_number != S) {
-      vertices_list = vertices_list->next;
-  }
-
-  if (vertices_list == NULL || vertices_list->interface_number != S) {
-    LOG_ERR("Unable to find vertex: %d",S);
-    goto destroy;
-  }
-
-  /* If we are unable to add certain edge, Notify User
-   * and Proceed to execute further
-   */
-  vertices_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list->adjacency_list, new_edge);
+  
+  G = Graph_append_edge(G,S,D,weight);
 
   if (!is_directed) {
-      new_edge = NULL;
-      new_edge = Graph_add_edge_template(S, weight);
-      if (new_edge == NULL) {
-        LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",D,S);
-        goto destroy;
-      }
-
-      new_edge   =  Graph_add_edge_template(D, weight);
-      if (new_edge == NULL) {
-        LOG_ERR("Unable to Create edge Template for Source %d - Destination %d\n",D,S);
-        goto destroy;
-      }
-
-      while(vertices_list != NULL && vertices_list->interface_number != D) {
-        vertices_list = vertices_list->next;
-      }
-
-      if (vertices_list == NULL || vertices_list->interface_number != D) {
-        LOG_ERR("Unable to find vertex: %d",D);
-        goto destroy;
-      }
-
-      /* If we are unable to add certain edge, Notify User
-       * and Proceed to execute further
-       */
-      vertices_list->adjacency_list = Graph_add_edge_to_vertex(vertices_list->adjacency_list, new_edge);
+    G = Graph_append_edge(G,D,S,weight);
   }
 
-destroy:
-  free(new_edge);
-  free(vertices_list);
-  return NULL;
+  return G;
 }
   
 
 /*
- * Function: Graph_add_vertices()
+ * Function: Graph_add_vertices_template()
  *
  * In this function we create 
  * single vertex and return it
@@ -232,7 +249,7 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
     }
 
     while(iterator < no_of_vertices + G->total_vertices) {
-      LOG_DEBUG("Memory Appending for vertices %d\n",iterator);
+      LOG_DEBUG("Memory Appending for vertices %d",iterator);
       LOG_DEBUG("Total required vertices %d, Present vertices %d",no_of_vertices, G->total_vertices);
 
       runner  = Graph_add_vertices_template();
@@ -241,6 +258,7 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
         goto destroy;
       }
 
+      LOG_DEBUG("Appending Vertex with ID:%d",iterator);
       runner->interface_number = iterator;
 
       if (V == NULL) {
@@ -250,10 +268,10 @@ Graph_add_vertices(Graph_t *G, int no_of_vertices) {
           V->next = runner;
           V       = V->next;
       }
-
+    
       runner = runner->next;
 
-      iterator++;
+      iterator = iterator + 1;
     }
 
     G->total_vertices += iterator;
@@ -357,8 +375,10 @@ destroy:
  *      no-return
  */
 void
-Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
+Graph_dump_vertices(const Graph_vertices_t *V, bool print_adjacency) {
   
+    Graph_edges_t       *adjacency_list;
+
     if (V == NULL) {
       return;
     }
@@ -366,8 +386,27 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
     printf("-------------------------\n");
     printf("| Vertex ID : %4d      |\n",V->interface_number);
     printf("| is_visited: %s     |\n",V->is_visited?"TRUE":"FALSE");
-    printf("| min_dis   : %s       |\n",(V->min_distance == NaN)?"NaN":(char *)(V->min_distance));
+    if (V->min_distance == NaN) {
+      printf("| min_dis   : NaN       |\n");
+    } else {
+      printf("| min_dis   : %lu       |\n",(V->min_distance));
+    }
     printf("-------------------------\n");
+
+    if (print_adjacency) {
+      if (V->adjacency_list != NULL) {
+        printf("-------------------------\n");
+        printf("Adjacency ");
+        adjacency_list = V->adjacency_list;
+        while(adjacency_list != NULL) {
+          printf("%3d",adjacency_list->target);
+          adjacency_list = adjacency_list->next;
+        }
+        printf("\n");
+        printf("-------------------------\n");
+
+      }
+    }
 
     return;
 }
@@ -386,7 +425,7 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
  *      NULL
  */
  void
- Graph_display_graph(Graph_t *G) {
+ Graph_display_graph(const Graph_t *G) {
   
    Graph_vertices_t         *V_parse;
 
@@ -408,8 +447,8 @@ Graph_dump_vertices(Graph_vertices_t *V, bool print_adjacency) {
    V_parse  = G->vertices_list;
 
    while (V_parse != NULL) {
-      Graph_dump_vertices(V_parse, FALSE);
-      V_parse = V_parse->next;
+     Graph_dump_vertices(V_parse, TRUE);
+     V_parse = V_parse->next;
    }
  
 destroy:
@@ -417,3 +456,209 @@ destroy:
    free(V_parse);
    return;
  }
+
+
+/*
+ * Function
+ * Graph_has_edge
+ *
+ * In this function we check whether 
+ * there is a edge between two vertices
+ * provided as argument
+ *
+ * Input:
+ *    Graph_t   G,
+ *    vertex_number_t source,
+ *    vertex_number_t destination
+ *
+ * Output:
+ *    TRUE (If there is a link between source and destination
+ *    else 
+ *    False
+ */
+bool
+Graph_has_edge(const Graph_t *G, vertex_number_t S, vertex_number_t D) {
+  
+  Graph_vertices_t      *vertices_list;
+  bool                   found = 0;
+  Graph_edges_t         *adjacency_list;
+
+  vertices_list = G->vertices_list;
+
+  while(vertices_list != NULL && vertices_list->interface_number != S) {
+    vertices_list = vertices_list->next;
+  }
+
+  if(vertices_list == NULL) {
+    LOG_ERR("Unable to Find Source :%d\n",S); 
+    goto end;
+  }
+
+  while(adjacency_list != NULL && adjacency_list->target != D) {
+    adjacency_list = adjacency_list->next;
+  }
+
+  if (adjacency_list != NULL) {
+    found = 1;
+  }
+end:
+  free(vertices_list);
+  free(adjacency_list);
+  return found;
+}
+
+Graph_vertices_t *
+Graph_Dj_get_next_vertex(Graph_t *G, Graph_priority_t *priority_list) {
+
+  if (priority_list == NULL) {
+    return NULL;
+  }
+
+  return Graph_get_vertex(G,priority_list->vertex); 
+}
+
+Graph_priority_t *
+Graph_get_priority_list_template() {
+
+  Graph_priority_t      *temp;
+
+  temp  = (Graph_priority_t *) malloc(sizeof(Graph_priority_t));
+  if (temp == NULL) {
+      LOG_ERR("Unable to allocate memory for new Prio List");
+      goto destroy;
+  }
+
+  temp->vertex = 0;
+  temp->next   = NULL;
+
+  return temp;
+
+destroy:
+  free(temp);
+  return NULL;
+}
+
+bool
+Graph_Dj_set_min_distance(Graph_t *G,
+                          edge_weight_t weight, 
+                          vertex_number_t vertex_ID) {
+
+  Graph_vertices_t            *vertex;
+
+  vertex  = Graph_get_vertex(G,vertex_ID);
+  if (vertex == NULL) {
+    LOG_ERR("Unable to find vertex with ID :%d ",vertex_ID);
+    return FALSE;
+  }
+
+
+  if (vertex->min_distance > weight) {
+      vertex->min_distance = weight;
+      return TRUE;
+  }
+
+  return FALSE;
+}
+
+Graph_priority_t *
+Graph_get_priority_list(Graph_t *G,
+                         Graph_priority_t  *priority_list, 
+                          Graph_vertices_t *vertex) {
+
+  Graph_edges_t             *adjacency_list;
+  Graph_priority_t          *prio_runner;
+  Graph_priority_t          *temp;
+
+  /* Need to make sure that vertex sent is proper */
+  assert(vertex);
+
+  adjacency_list  = vertex->adjacency_list;
+  prio_runner     = priority_list;
+
+  while(prio_runner != NULL && prio_runner->next != NULL ) {
+    prio_runner = prio_runner->next;
+  }
+
+  while(adjacency_list != NULL) {
+    /* Add to Priority List only if 
+     * vertex distance + weight is less than existing 
+     * new vertex min distance
+     */
+    if (Graph_Dj_set_min_distance(G, 
+                        (vertex->min_distance+adjacency_list->weight),
+                          adjacency_list->target)) {
+      temp  =  Graph_get_priority_list_template(); 
+      temp->vertex = adjacency_list->target;
+      if (priority_list == NULL || prio_runner == NULL) {
+        priority_list = temp;
+        prio_runner   = temp;
+      } else {
+        prio_runner->next = temp;
+        prio_runner   = prio_runner->next;
+      }
+      temp = temp->next;
+    } 
+    adjacency_list = adjacency_list->next;
+  }
+
+}
+
+Graph_priority_t *
+Graph_Dj_pop_priority_list(Graph_priority_t *priority_list) {
+
+  Graph_priority_t      *runner;
+
+  assert(priority_list);
+  runner = priority_list;
+  priority_list = priority_list->next;
+
+  /* Destroy Unnecessary Node */
+  free(runner);
+
+  return priority_list;
+}
+
+/*
+ * Function
+ * Graph_get_dijkstra
+ *
+ * In this function we find shortest distance 
+ * from Source (argument) to all the vertices
+ * and distance
+ *
+ * Input:
+ *       Graph_t * G (Graph)
+ * Output:
+ *       None 
+ */
+void
+Graph_get_dijsktra(Graph_t  *G, vertex_number_t S) {
+ 
+  Graph_vertices_t      *vertex;
+  Graph_edges_t         *adjacency_list;
+  Graph_priority_t      *priority_list;
+
+  vertex = Graph_get_vertex(G,S);
+
+  if (vertex == NULL) {
+    LOG_ERR("Unable to find vertex %d",S);
+    return;
+  }
+  
+  vertex->min_distance = 0;
+  adjacency_list = vertex->adjacency_list;
+  priority_list = Graph_get_priority_list(G, priority_list, vertex);
+
+  while(priority_list != NULL) {
+    /* Return Last vertex from Priority List */
+    vertex = Graph_Dj_get_next_vertex(G, priority_list);
+    /* Pop PriorityList */
+    priority_list = Graph_Dj_pop_priority_list(priority_list);
+    /* Populate min distance for new vertices */
+    priority_list = Graph_get_priority_list(G, priority_list,vertex); 
+  }
+
+  Graph_display_graph(G);
+
+  return;
+}
