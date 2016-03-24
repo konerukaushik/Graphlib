@@ -15,6 +15,69 @@
 
 #include "graph.h"
 
+/*Function:
+ * Graph_node_in_adjacency
+ *
+ * In this function we verify whether the node is
+ * present in adjacency List of a vertex
+ *
+ * Input:
+ *      Graph_edges_t
+ *      vertex_number_t
+ *
+ * Output:
+ *      bool - True  - IF Present
+ *             False - IF not Present
+ */
+bool
+Graph_node_in_adjacency(Graph_edges_t *adjacency_list, vertex_number_t node) {
+  
+  Graph_edges_t         *runner;
+
+  runner  = adjacency_list;
+
+  while(runner != NULL) {
+    if (runner->target == node) {
+      return TRUE;
+    }
+    runner = runner->next;
+  }
+
+  return FALSE;
+}
+
+/*
+ * Function:
+ *  Graph_has_edge
+ *
+ * In this function we validate whether
+ * there is a edge between
+ * two vetices
+ *
+ * Input:
+ *    Graph_t
+ *    vertex_number_t
+ *    vertex_number_t
+ *
+ * Output:
+ *     bool True <-- If there is Edge
+ *          False <-- If there is no Edge
+ */
+bool
+Graph_has_edge(Graph_t *G, vertex_number_t S, vertex_number_t D) {
+
+  Graph_vertices_t    *vertex;
+
+  vertex  = Graph_get_vertex(G,S);
+  if (vertex == NULL) {
+    LOG_DEBUG("Vertex :%d has no edges",S);
+    return FALSE;
+  }
+
+  return Graph_node_in_adjacency(vertex->adjacency_list,D);
+
+}
+
 /*
  * Function:
  *  Graph_node_in_priority_list
@@ -379,7 +442,6 @@ Graph_init_template() {
     G->total_vertices   =   0;
     G->total_edges      =   0;
     G->vertices_list    =   NULL;
-    G->edges_list       =   NULL;
     G->source           =   NaN;
     G->is_directed      =   FALSE;
 
@@ -525,55 +587,6 @@ destroy:
    return;
  }
 
-
-/*
- * Function
- * Graph_has_edge
- *
- * In this function we check whether 
- * there is a edge between two vertices
- * provided as argument
- *
- * Input:
- *    Graph_t   G,
- *    vertex_number_t source,
- *    vertex_number_t destination
- *
- * Output:
- *    TRUE (If there is a link between source and destination
- *    else 
- *    False
- */
-bool
-Graph_has_edge(const Graph_t *G, vertex_number_t S, vertex_number_t D) {
-  
-  Graph_vertices_t      *vertices_list;
-  bool                   found = 0;
-  Graph_edges_t         *adjacency_list;
-
-  vertices_list = G->vertices_list;
-
-  while(vertices_list != NULL && vertices_list->interface_number != S) {
-    vertices_list = vertices_list->next;
-  }
-
-  if(vertices_list == NULL) {
-    LOG_ERR("Unable to Find Source :%d\n",S); 
-    goto end;
-  }
-
-  while(adjacency_list != NULL && adjacency_list->target != D) {
-    adjacency_list = adjacency_list->next;
-  }
-
-  if (adjacency_list != NULL) {
-    found = 1;
-  }
-end:
-  free(vertices_list);
-  free(adjacency_list);
-  return found;
-}
 
 Graph_vertices_t *
 Graph_Dj_get_next_vertex(Graph_t *G, Graph_priority_t *priority_list) {

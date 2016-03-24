@@ -49,7 +49,6 @@ struct graph_ {
     vertex_number_t      total_vertices; /* To Store total number of vertices */
     edge_weight_t        total_edges;    /* To Store total number of edges */
     Graph_vertices_t    *vertices_list;  /* To store vertices */
-    Graph_edges_t       *edges_list;     /* To store edges List, Connecting Vertices */
     vertex_number_t      source;         /* To Maintain Source Node */
     bool                 is_directed;    /* Set True If Graph is Directed, Else False */
 
@@ -138,5 +137,17 @@ Graph_add_edge(Graph_t *, vertex_number_t, vertex_number_t, edge_weight_t , bool
 
 void
 Graph_get_dijsktra(Graph_t *, vertex_number_t );
+
+bool
+Graph_has_edge(Graph_t *, vertex_number_t , vertex_number_t);
+
+/*
+ * Misc Function Declarations
+ */
+bool
+Graph_node_in_adjacency(Graph_edges_t *, vertex_number_t);
+
+Graph_vertices_t *
+Graph_get_vertex(Graph_t *, vertex_number_t);
 
 #endif /* End of __GRAPH_H__ */
